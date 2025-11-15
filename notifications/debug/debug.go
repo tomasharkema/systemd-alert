@@ -3,9 +3,9 @@ package debug
 import (
 	"log"
 
-	"github.com/james-lawrence/systemd-alert"
-	"github.com/james-lawrence/systemd-alert/notifications"
-	"github.com/james-lawrence/systemd-alert/systemd"
+	alerts "github.com/tomasharkema/systemd-alert"
+	"github.com/tomasharkema/systemd-alert/notifications"
+	"github.com/tomasharkema/systemd-alert/systemd"
 )
 
 func init() {

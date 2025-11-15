@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/godbus/dbus"
-	"github.com/james-lawrence/systemd-alert/systemd"
+	"github.com/tomasharkema/systemd-alert/systemd"
 )
 
 // Notifier interface for sending alerts.

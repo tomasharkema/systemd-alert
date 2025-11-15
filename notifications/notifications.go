@@ -1,6 +1,6 @@
 package notifications
 
-import "github.com/james-lawrence/systemd-alert"
+import alerts "github.com/tomasharkema/systemd-alert"
 
 type creator func() alerts.Notifier
 

@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"github.com/influxdata/influxdb/client/v2"
-	"github.com/james-lawrence/systemd-alert"
-	"github.com/james-lawrence/systemd-alert/notifications"
-	"github.com/james-lawrence/systemd-alert/systemd"
 	"github.com/pkg/errors"
+	alerts "github.com/tomasharkema/systemd-alert"
+	"github.com/tomasharkema/systemd-alert/notifications"
+	"github.com/tomasharkema/systemd-alert/systemd"
 )
 
 func init() {
