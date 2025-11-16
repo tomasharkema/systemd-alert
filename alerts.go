@@ -5,17 +5,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/godbus/dbus"
-	"github.com/tomasharkema/systemd-alert/systemd"
+	"github.com/coreos/go-systemd/v22/dbus"
 )
 
 // Notifier interface for sending alerts.
 type Notifier interface {
-	Alert(units ...*systemd.UnitStatus)
+	Alert(units ...*dbus.UnitStatus)
 }
 
-func isChanged(match filter) func(*systemd.UnitStatus, *systemd.UnitStatus) bool {
-	return func(oldu, newu *systemd.UnitStatus) bool {
+func isChanged(match filter) func(*dbus.UnitStatus, *dbus.UnitStatus) bool {
+	return func(oldu, newu *dbus.UnitStatus) bool {
 		// if new state matches then use new unit status.
 		return match(newu) && *oldu != *newu
 	}
@@ -53,7 +52,7 @@ func AlertNotifiers(notifiers ...Notifier) func(*RunConfig) {
 
 // SafeRun - ensures there is a connection before attempting to
 // run.
-func SafeRun(conn *systemd.Conn, options ...runOption) {
+func SafeRun(conn *dbus.Conn, options ...runOption) {
 	if conn == nil {
 		return
 	}
@@ -62,7 +61,7 @@ func SafeRun(conn *systemd.Conn, options ...runOption) {
 }
 
 // Run - runs alerts
-func Run(conn *systemd.Conn, options ...runOption) {
+func Run(conn *dbus.Conn, options ...runOption) {
 	config := RunConfig{
 		Frequency: 1 * time.Second,
 	}
@@ -87,7 +86,7 @@ func Run(conn *systemd.Conn, options ...runOption) {
 		log.Printf("running %T\n", a)
 	}
 
-	batch := make(map[string]*systemd.UnitStatus)
+	batch := make(map[string]*dbus.UnitStatus)
 	ticker := time.NewTicker(config.Frequency)
 	defer ticker.Stop()
 	for {
@@ -99,7 +98,7 @@ func Run(conn *systemd.Conn, options ...runOption) {
 
 			original := batch[event.Name]
 			if original == nil {
-				original = &systemd.UnitStatus{}
+				original = &dbus.UnitStatus{}
 			}
 
 			if isChanged(matcher)(original, event) {
@@ -110,7 +109,7 @@ func Run(conn *systemd.Conn, options ...runOption) {
 				continue
 			}
 
-			events := make([]*systemd.UnitStatus, 0, len(batch))
+			events := make([]*dbus.UnitStatus, 0, len(batch))
 			for _, unit := range batch {
 				events = append(events, unit)
 			}
@@ -119,70 +118,90 @@ func Run(conn *systemd.Conn, options ...runOption) {
 				a.Alert(events...)
 			}
 
-			batch = make(map[string]*systemd.UnitStatus)
+			batch = make(map[string]*dbus.UnitStatus)
 		}
 	}
 }
 
-func receiveEvents(conn *systemd.Conn) (<-chan *systemd.UnitStatus, error) {
+func receiveEvents(conn *dbus.Conn) (<-chan *dbus.UnitStatus, error) {
 	var (
 		err error
 	)
-	src := make(chan *dbus.Signal)
-	dst := make(chan *systemd.UnitStatus)
-	if err = conn.Subscribe(src); err != nil {
+	// src := make(chan *dbus.Signal)
+	dst := make(chan *dbus.UnitStatus)
+	// if err = conn.Subscribe(src); err != nil {
+	// 	return nil, err
+	// }
+	if err = conn.Subscribe(); err != nil {
 		return nil, err
 	}
 
-	if err = conn.Signals(systemd.UnitPropertiesChangedSignal); err != nil {
-		return nil, err
-	}
+	// if err = conn.Signals(systemd.UnitPropertiesChangedSignal); err != nil {
+	// 	return nil, err
+	// }
+
+	dstt, errs := conn.SubscribeUnits(time.Second)
 
 	go func() {
-		for s := range src {
-			var (
-				err           error
-				status        systemd.UnitEvent
-				unitName      dbus.Variant
-				unitLoadState dbus.Variant
-			)
+		for {
+			select {
+			case e := <-errs:
+				log.Println("failed to get unit property: LoadState", e)
 
-			if s.Body[0] != "org.freedesktop.systemd1.Unit" {
-				continue
-			}
-
-			if status, err = systemd.DecodeUnitEvent(s); err != nil {
-				log.Println(err)
-				continue
-			}
-
-			if unitName, err = conn.GetUnitProperty(status.Path, "Id"); err != nil {
-				log.Println("failed to get unit property: Id", err)
-				continue
-			}
-
-			if unitLoadState, err = conn.GetUnitProperty(status.Path, "LoadState"); err != nil {
-				log.Println("failed to get unit property: LoadState", err)
-				continue
-			}
-
-			dst <- &systemd.UnitStatus{
-				Name:        unitName.Value().(string),
-				LoadState:   unitLoadState.Value().(string),
-				ActiveState: status.ActiveState,
-				SubState:    status.SubState,
-				Path:        status.Path,
+			case d := <-dstt:
+				for n, dd := range d {
+					log.Println("got update for", n)
+					dst <- dd
+				}
 			}
 		}
 	}()
 
+	// go func() {
+	// 	for s := range src {
+	// 		var (
+	// 			err           error
+	// 			status        systemd.UnitEvent
+	// 			unitName      dbus.Variant
+	// 			unitLoadState dbus.Variant
+	// 		)
+
+	// 		if s.Body[0] != "org.freedesktop.systemd1.Unit" {
+	// 			continue
+	// 		}
+
+	// 		if status, err = systemd.DecodeUnitEvent(s); err != nil {
+	// 			log.Println(err)
+	// 			continue
+	// 		}
+
+	// 		if unitName, err = conn.GetUnitProperty(status.Path, "Id"); err != nil {
+	// 			log.Println("failed to get unit property: Id", err)
+	// 			continue
+	// 		}
+
+	// 		if unitLoadState, err = conn.GetUnitProperty(status.Path, "LoadState"); err != nil {
+	// 			log.Println("failed to get unit property: LoadState", err)
+	// 			continue
+	// 		}
+
+	// 		dst <- &dbus.UnitStatus{
+	// 			Name:        unitName.Value().(string),
+	// 			LoadState:   unitLoadState.Value().(string),
+	// 			ActiveState: status.ActiveState,
+	// 			SubState:    status.SubState,
+	// 			Path:        status.Path,
+	// 		}
+	// 	}
+	// }()
+
 	return dst, nil
 }
 
-type filter func(*systemd.UnitStatus) bool
+type filter func(*dbus.UnitStatus) bool
 
 func or(filters ...filter) filter {
-	return func(unit *systemd.UnitStatus) bool {
+	return func(unit *dbus.UnitStatus) bool {
 		for _, filter := range filters {
 			if filter(unit) {
 				return true
@@ -193,7 +212,7 @@ func or(filters ...filter) filter {
 }
 
 func and(filters ...filter) filter {
-	return func(unit *systemd.UnitStatus) bool {
+	return func(unit *dbus.UnitStatus) bool {
 		result := true
 		for _, filter := range filters {
 			result = result && filter(unit)
@@ -203,26 +222,26 @@ func and(filters ...filter) filter {
 }
 
 func filterByName(name string) filter {
-	return func(status *systemd.UnitStatus) bool {
+	return func(status *dbus.UnitStatus) bool {
 		log.Println("filtering by name", strings.ToLower(name), strings.ToLower(status.Name))
 		return strings.ToLower(name) == strings.ToLower(status.Name)
 	}
 }
 
 // IgnoreServices ignore the provided services.
-func IgnoreServices(names ...string) func(*systemd.UnitStatus) bool {
+func IgnoreServices(names ...string) func(*dbus.UnitStatus) bool {
 	ignore := make(map[string]bool, len(names))
 	for _, name := range names {
 		ignore[name] = true
 	}
 
-	return func(status *systemd.UnitStatus) bool {
+	return func(status *dbus.UnitStatus) bool {
 		return !(ignore[status.Name])
 	}
 }
 
 // FilterFailed matches units that were failed
-func FilterFailed(status *systemd.UnitStatus) bool {
+func FilterFailed(status *dbus.UnitStatus) bool {
 	const (
 		failed = "failed"
 	)
@@ -231,7 +250,7 @@ func FilterFailed(status *systemd.UnitStatus) bool {
 }
 
 // FilterAutorestart matches units that were autorestarted
-func FilterAutorestart(status *systemd.UnitStatus) bool {
+func FilterAutorestart(status *dbus.UnitStatus) bool {
 	const (
 		autorestart = "auto-restart"
 	)

@@ -5,14 +5,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/naoina/toml"
 	"github.com/naoina/toml/ast"
 	"github.com/pkg/errors"
 	alerts "github.com/tomasharkema/systemd-alert"
 	"github.com/tomasharkema/systemd-alert/internal/config"
 	"github.com/tomasharkema/systemd-alert/notifications"
-	"github.com/tomasharkema/systemd-alert/notifications/native"
-	"github.com/tomasharkema/systemd-alert/systemd"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	// load native into the registry.
@@ -23,8 +22,8 @@ import (
 )
 
 type _default struct {
-	conn   *systemd.Conn
-	uconn  *systemd.Conn
+	conn   *dbus.Conn
+	uconn  *dbus.Conn
 	Config string
 }
 
@@ -61,7 +60,7 @@ func (t *_default) execute(c *kingpin.ParseContext) error {
 func decodeConfig(path string) (a agentConfig, alerters []alerts.Notifier, err error) {
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		a = agentConfig{Frequency: time.Second}
-		alerters = append(alerters, native.DefaultAlerter())
+		// alerters = append(alerters, native.DefaultAlerter())
 		return a, alerters, nil
 	}
 
@@ -93,9 +92,9 @@ func decodeConfig(path string) (a agentConfig, alerters []alerts.Notifier, err e
 	}
 
 	if len(alerters) == 0 {
-		if a := native.DefaultAlerter(); a != nil {
-			alerters = append(alerters, a)
-		}
+		// if a := native.DefaultAlerter(); a != nil {
+		// 	alerters = append(alerters, a)
+		// }
 	}
 	return a, alerters, nil
 }

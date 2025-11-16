@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/pkg/errors"
 	alerts "github.com/tomasharkema/systemd-alert"
 	"github.com/tomasharkema/systemd-alert/notifications"
-	"github.com/tomasharkema/systemd-alert/systemd"
 )
 
 func init() {
@@ -56,7 +56,7 @@ type Alerter struct {
 }
 
 // Alert about the provided units.
-func (t Alerter) Alert(units ...*systemd.UnitStatus) {
+func (t Alerter) Alert(units ...*dbus.UnitStatus) {
 	var (
 		err  error
 		raw  []byte

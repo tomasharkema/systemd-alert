@@ -3,9 +3,7 @@ module github.com/tomasharkema/systemd-alert
 go 1.25
 
 require (
-	github.com/esiqveland/notify v0.9.1
-	github.com/godbus/dbus v4.1.0+incompatible
-	github.com/godbus/dbus/v5 v5.0.3
+	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/influxdata/influxdb v1.2.4
 	github.com/naoina/toml v0.1.1
 	github.com/pkg/errors v0.9.1
@@ -19,9 +17,11 @@ require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/godbus/dbus/v5 v5.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 )

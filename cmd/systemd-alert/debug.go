@@ -3,14 +3,14 @@ package main
 import (
 	"time"
 
-	"github.com/tomasharkema/systemd-alert"
+	"github.com/coreos/go-systemd/v22/dbus"
+	alerts "github.com/tomasharkema/systemd-alert"
 	"github.com/tomasharkema/systemd-alert/notifications/debug"
-	"github.com/tomasharkema/systemd-alert/systemd"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 type debugAlert struct {
-	uconn, conn *systemd.Conn
+	uconn, conn *dbus.Conn
 	Frequency   time.Duration
 }
 

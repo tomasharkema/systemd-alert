@@ -3,16 +3,16 @@ package main
 import (
 	"time"
 
-	"github.com/tomasharkema/systemd-alert"
+	"github.com/coreos/go-systemd/v22/dbus"
+	alerts "github.com/tomasharkema/systemd-alert"
 	"github.com/tomasharkema/systemd-alert/notifications/slack"
-	"github.com/tomasharkema/systemd-alert/systemd"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 type slackAlert struct {
 	Alerter   *slack.Alerter
-	conn      *systemd.Conn
-	uconn     *systemd.Conn
+	conn      *dbus.Conn
+	uconn     *dbus.Conn
 	Frequency time.Duration
 	IgnoreSet []string
 }

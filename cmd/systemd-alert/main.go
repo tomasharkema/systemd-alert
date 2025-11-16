@@ -8,25 +8,25 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/pkg/errors"
-	"github.com/tomasharkema/systemd-alert/systemd"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 func main() {
 	var (
-		pcmd        string
-		err         error
-		uconn, conn *systemd.Conn
-		_, shutdown = context.WithCancel(context.Background())
+		pcmd          string
+		err           error
+		uconn, conn   *dbus.Conn
+		ctx, shutdown = context.WithCancel(context.Background())
 	)
 
-	if conn, err = systemd.NewSystemConnection(); err != nil {
+	if conn, err = dbus.NewSystemConnectionContext(ctx); err != nil {
 		log.Fatalln(errors.Wrap(err, "failed to open systemd connection"))
 	}
 
-	if uconn, err = systemd.NewUserConnection(); err != nil {
-		log.Println(errors.Wrap(err, "failed to open systemd user connection"))
+	if uconn, err = dbus.NewUserConnectionContext(ctx); err != nil {
+		log.Fatalln(errors.Wrap(err, "failed to open systemd connection"))
 	}
 
 	app := kingpin.New("systemd-alert", "monitoring around systemd")
